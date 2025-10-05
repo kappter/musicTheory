@@ -1,0 +1,46 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f8f8f8;
+  color: #222;
+  text-align: center;
+  margin: 0;
+  padding: 20px;
+}
+
+.canvas-container {
+  margin-bottom: 20px;
+}
+
+canvas {
+  display: block;
+  margin: 10px auto;
+  border: 1px solid #aaa;
+  background: #fff;
+}
+
+h1, h2 {
+  margin: 20px 0 10px;
+}
+
+table {
+  width: 80%;
+  margin: 10px auto 30px;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+
+tr:hover {
+  background-color: #e6f2ff;
+  cursor: pointer;
+}
+
+/* highlight styling */
+.highlight-note {
+  fill: red;
+  stroke: black;
+  stroke-width: 2px;
+}
