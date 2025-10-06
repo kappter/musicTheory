@@ -1,4 +1,44 @@
-<!DOCTYPE html>
+
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -160,6 +200,11 @@
             <select id="tuningSelect">
                 <option value="standard">Standard Tuning</option>
                 <option value="dropd">Drop D Tuning</option>
+                <option value="openg">Open G Tuning</option>
+                <option value="dadgad">DADGAD Tuning</option>
+                <option value="opend">Open D Tuning</option>
+                <option value="openc">Open C Tuning</option>
+                <option value="doubledropd">Double Drop D Tuning</option>
             </select>
             <select id="stringOrderSelect">
                 <option value="highBottom">High String Bottom</option>
@@ -189,11 +234,9 @@
                 <option value="Mixolydian">Mixolydian</option>
                 <option value="Aeolian">Aeolian (Natural Minor)</option>
                 <option value="Locrian">Locrian</option>
-
                 <!-- Pentatonic Scales -->
                 <option value="MajorPentatonic">Major Pentatonic</option>
                 <option value="MinorPentatonic">Minor Pentatonic</option>
-
                 <!-- Harmonic Minor and Modes -->
                 <option value="HarmonicMinor">Harmonic Minor</option>
                 <option value="LocrianNat6">Locrian ♮6</option>
@@ -202,7 +245,6 @@
                 <option value="PhrygianDominant">Phrygian Dominant</option>
                 <option value="LydianSharp2">Lydian ♯2</option>
                 <option value="SuperLocrianBB7">Super Locrian ♭♭7</option>
-
                 <!-- Melodic Minor and Modes -->
                 <option value="MelodicMinor">Melodic Minor</option>
                 <option value="DorianFlat2">Dorian ♭2</option>
@@ -211,13 +253,11 @@
                 <option value="MixolydianFlat6">Mixolydian ♭6</option>
                 <option value="LocrianNat2">Locrian ♮2</option>
                 <option value="Altered">Altered Scale (Super Locrian)</option>
-
                 <!-- Other Scales -->
                 <option value="WholeTone">Whole Tone</option>
                 <option value="DiminishedHW">Diminished (Half–Whole)</option>
                 <option value="DiminishedWH">Diminished (Whole–Half)</option>
                 <option value="Blues">Blues Scale</option>
-
                 <!-- Bebop Scales -->
                 <option value="BebopMajor">Bebop Major</option>
                 <option value="BebopDominant">Bebop Dominant</option>
@@ -331,18 +371,14 @@
             Mixolydian: ["maj", "min", "dim", "maj", "min", "min", "maj"],
             Aeolian: ["min", "dim", "maj", "min", "min", "maj", "maj"],
             Locrian: ["dim", "maj", "min", "min", "maj", "maj", "min"],
-            // Harmonic Minor base
             HarmonicMinor: ["min", "dim", "aug", "min", "maj", "maj", "dim"],
-            // Rotated for HM modes
             LocrianNat6: ["dim", "aug", "min", "maj", "maj", "dim", "min"],
             IonianAug: ["aug", "min", "maj", "maj", "dim", "min", "dim"],
             DorianSharp4: ["min", "maj", "maj", "dim", "min", "dim", "aug"],
             PhrygianDominant: ["maj", "maj", "dim", "min", "dim", "aug", "min"],
             LydianSharp2: ["maj", "dim", "min", "dim", "aug", "min", "maj"],
             SuperLocrianBB7: ["dim", "min", "dim", "aug", "min", "maj", "maj"],
-            // Melodic Minor base
             MelodicMinor: ["min", "dim", "aug", "min", "maj", "dim", "dim"],
-            // Rotated for MM modes
             DorianFlat2: ["dim", "aug", "min", "maj", "dim", "dim", "min"],
             LydianAugmented: ["aug", "min", "maj", "dim", "dim", "min", "dim"],
             LydianDominant: ["min", "maj", "dim", "dim", "min", "dim", "aug"],
@@ -358,18 +394,14 @@
             Mixolydian: ["7", "min7", "min7b5", "maj7", "min7", "min7", "maj7"],
             Aeolian: ["min7", "min7b5", "maj7", "min7", "min7", "maj7", "7"],
             Locrian: ["min7b5", "maj7", "min7", "min7", "maj7", "7", "min7"],
-            // Harmonic Minor base
             HarmonicMinor: ["minmaj7", "m7b5", "7#5", "m7", "maj7", "maj7", "dim7"],
-            // Rotated for HM modes
             LocrianNat6: ["m7b5", "7#5", "m7", "maj7", "maj7", "dim7", "minmaj7"],
             IonianAug: ["7#5", "m7", "maj7", "maj7", "dim7", "minmaj7", "m7b5"],
             DorianSharp4: ["m7", "maj7", "maj7", "dim7", "minmaj7", "m7b5", "7#5"],
             PhrygianDominant: ["maj7", "maj7", "dim7", "minmaj7", "m7b5", "7#5", "m7"],
             LydianSharp2: ["maj7", "dim7", "minmaj7", "m7b5", "7#5", "m7", "maj7"],
             SuperLocrianBB7: ["dim7", "minmaj7", "m7b5", "7#5", "m7", "maj7", "maj7"],
-            // Melodic Minor base
             MelodicMinor: ["minmaj7", "m7", "maj7#5", "7", "7", "m7b5", "m7b5"],
-            // Rotated for MM modes
             DorianFlat2: ["m7", "maj7#5", "7", "7", "m7b5", "m7b5", "minmaj7"],
             LydianAugmented: ["maj7#5", "7", "7", "m7b5", "m7b5", "minmaj7", "m7"],
             LydianDominant: ["7", "7", "m7b5", "m7b5", "minmaj7", "m7", "maj7#5"],
@@ -421,18 +453,35 @@
         }
 
         function getGuitarStrings(tuning) {
-            const standard = [
-                { note: "E", octave: 2, semitone: 4 },
-                { note: "A", octave: 2, semitone: 9 },
-                { note: "D", octave: 3, semitone: 2 },
-                { note: "G", octave: 3, semitone: 7 },
-                { note: "B", octave: 3, semitone: 11 },
-                { note: "E", octave: 4, semitone: 4 }
-            ];
-            if (tuning === 'dropd') {
-                standard[0] = { note: "D", octave: 2, semitone: 2 };
-            }
-            return standard;
+            const tunings = {
+                standard: [
+                    ["E", 2], ["A", 2], ["D", 3], ["G", 3], ["B", 3], ["E", 4]
+                ],
+                dropd: [
+                    ["D", 2], ["A", 2], ["D", 3], ["G", 3], ["B", 3], ["E", 4]
+                ],
+                openg: [
+                    ["D", 2], ["G", 2], ["D", 3], ["G", 3], ["B", 3], ["D", 4]
+                ],
+                dadgad: [
+                    ["D", 2], ["A", 2], ["G", 3], ["D", 3], ["A", 3], ["D", 4]
+                ],
+                opend: [
+                    ["D", 2], ["A", 2], ["D", 3], ["F#", 3], ["A", 3], ["D", 4]
+                ],
+                openc: [
+                    ["C", 2], ["G", 2], ["C", 3], ["G", 3], ["C", 4], ["E", 4]
+                ],
+                doubledropd: [
+                    ["D", 2], ["A", 2], ["D", 3], ["G", 3], ["B", 3], ["D", 4]
+                ]
+            };
+            const tuningConfig = tunings[tuning] || tunings.standard;
+            return tuningConfig.map(([note, octave]) => ({
+                note,
+                octave,
+                semitone: getSemitone(note, currentNotation)
+            }));
         }
 
         function generateChords(notes, mode) {
