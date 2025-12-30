@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scale / Mode Finder</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <h1>Scale / Mode Finder</h1>
+    <p class="subtitle">Tap notes to discover standard scales and modes.</p>
+  </header>
+
+  <main class="app-main">
+
+    <!-- Left: note selection surface (reuse fretboard or keyboard) -->
+    <section class="panel panel-notes">
+      <h2 class="panel-title">Select notes</h2>
+
+      <!-- Example: 12‑note chromatic strip; replace with your fretboard or piano -->
+      <div id="note-grid" class="note-grid">
+        <button class="note" data-pc="0">C</button>
+        <button class="note" data-pc="1">C♯ / D♭</button>
+        <button class="note" data-pc="2">D</button>
+        <button class="note" data-pc="3">D♯ / E♭</button>
+        <button class="note" data-pc="4">E</button>
+        <button class="note" data-pc="5">F</button>
+        <button class="note" data-pc="6">F♯ / G♭</button>
+        <button class="note" data-pc="7">G</button>
+        <button class="note" data-pc="8">G♯ / A♭</button>
+        <button class="note" data-pc="9">A</button>
+        <button class="note" data-pc="10">A♯ / B♭</button>
+        <button class="note" data-pc="11">B</button>
+      </div>
+
+      <div class="note-controls">
+        <button id="clear-selection" class="btn btn-secondary">
+          Clear selection
+        </button>
+      </div>
+    </section>
+
+    <!-- Right: detected scale/mode + properties -->
+    <section class="panel panel-result">
+      <h2 class="panel-title">Detected pattern</h2>
+
+      <div id="scale-status" class="status message">
+        Tap notes to discover a scale or mode.
+      </div>
+
+      <div id="scale-name" class="scale-name">
+        <!-- e.g. “D Dorian” -->
+      </div>
+
+      <div id="scale-meta" class="scale-meta">
+        <!-- e.g. “Family: Diatonic • Size: 7 notes” -->
+      </div>
+
+      <div id="scale-notes" class="scale-notes">
+        <!-- e.g. “Notes: D E F G A B C” -->
+      </div>
+
+      <div id="scale-extra" class="scale-extra">
+        <!-- any extra properties: parent scale, suggested chords, etc. -->
+      </div>
+
+      <!-- Optional handoff into practice app -->
+      <div class="result-actions">
+        <button id="open-in-practice" class="btn btn-primary" disabled>
+          Open in Practice App
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Optional: drums/transport zone if you want audio here too -->
+  <footer class="app-footer">
+    <!-- Could mirror your existing play/stop / pattern chooser, or stay empty for now -->
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
