@@ -89,8 +89,8 @@ export default function Home() {
     });
     
     // Extract mode name
-    const modeName = randomScale.name.split(" ").slice(1).join(" ") || randomScale.name;
-    const displayName = randomKey === "C" ? randomScale.name : `${randomKey} ${modeName}`;
+    const modeName = randomScale.name;
+    const displayName = `${randomKey} ${modeName}`;
     const loadedScale = { ...randomScale, name: displayName, notes: newNotes };
     
     setSelectedNotes(newNotes);
@@ -171,6 +171,7 @@ export default function Home() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLElement && (e.target.matches("input, select, textarea, button, summary") || e.target.isContentEditable)) return;
       const key = e.key.toLowerCase();
       const stringIdx = stringKeys.indexOf(key);
       const fretIdx = fretKeys.indexOf(key);
@@ -284,8 +285,8 @@ export default function Home() {
       });
       setSelectedNotes(newNotes);
       // Extract mode name - for single-word names like "Phrygian", use the full name
-      const modeName = scale.name.split(" ").slice(1).join(" ") || scale.name;
-      const displayName = keyToUse === "C" ? scale.name : `${keyToUse} ${modeName}`;
+      const modeName = scale.name;
+      const displayName = `${keyToUse} ${modeName}`;
       const loadedScale = { ...scale, name: displayName, notes: newNotes };
       setLoadedPresetScale(loadedScale);
       setDetectedScale(loadedScale);
@@ -318,8 +319,8 @@ export default function Home() {
       return CHROMATIC_NOTES[transposedIdx];
     });
     
-    const modeName = randomScale.name.split(" ").slice(1).join(" ") || randomScale.name;
-    const displayName = randomKey === "C" ? randomScale.name : `${randomKey} ${modeName}`;
+    const modeName = randomScale.name;
+    const displayName = `${randomKey} ${modeName}`;
     const loadedScale = { ...randomScale, name: displayName, notes: newNotes };
     
     setQuizScale(loadedScale);
@@ -393,8 +394,8 @@ export default function Home() {
       return CHROMATIC_NOTES[transposedIdx];
     });
     
-    const modeName = randomScale.name.split(" ").slice(1).join(" ") || randomScale.name;
-    const displayName = randomKey === "C" ? randomScale.name : `${randomKey} ${modeName}`;
+    const modeName = randomScale.name;
+    const displayName = `${randomKey} ${modeName}`;
     const loadedScale = { ...randomScale, name: displayName, notes: newNotes };
     
     setQuizSession({ currentQuestion: quizSession.currentQuestion + 1, scores: newScores });
@@ -406,12 +407,10 @@ export default function Home() {
     setQuizFeedback(null);
   };
 
-  const tuningNotes = getTuning();
-  const displayTuning = stringOrder === "low-bottom" ? [...tuningNotes].reverse() : tuningNotes;
-
+  const renderFretboard = (displayTuning: string[]) => {
   // Fretboard SVG rendering - improved design
   const frets = 13;
-  const strings = 6;
+  const strings = displayTuning.length;
   const stringSpacing = 30;
   const fretSpacing = 60;
   const dotRadius = 12;
@@ -432,6 +431,101 @@ export default function Home() {
   };
 
   const fretboardNotes = getFretboardNotes();
+
+    return (
+        <div className="overflow-x-auto">
+          <svg
+            width="100%"
+            height="auto"
+            viewBox={`0 0 ${fretboardWidth} ${fretboardHeight}`}
+            className="bg-gray-800 rounded"
+            style={{ minHeight: "200px" }}
+            preserveAspectRatio="xMidYMid meet"
+          >
+            {/* Fret lines (horizontal) */}
+            {Array.from({ length: strings }).map((_, i) => (
+              <line
+                key={`fret-${i}`}
+                x1={fretboardPadding}
+                y1={fretboardPadding + i * stringSpacing}
+                x2={fretboardWidth - fretboardPadding}
+                y2={fretboardPadding + i * stringSpacing}
+                stroke="#666"
+                strokeWidth="1.5"
+              />
+            ))}
+
+            {/* String lines (vertical) */}
+            {Array.from({ length: frets + 1 }).map((_, i) => (
+              <line
+                key={`string-${i}`}
+                x1={fretboardPadding + i * fretSpacing}
+                y1={fretboardPadding}
+                x2={fretboardPadding + i * fretSpacing}
+                y2={fretboardHeight - fretboardPadding}
+                stroke={i === 0 ? "#999" : i === 1 || i === 12 ? "#daa520" : "#555"}
+                strokeWidth={i === 0 || i === 1 || i === 12 ? "3" : "1"}
+              />
+            ))}
+
+            {/* Open string tuning labels (left side) - text only */}
+            {displayTuning.map((note, stringIdx) => {
+              return (
+                <text
+                  key={`open-${stringIdx}`}
+                  x={fretboardPadding - 20}
+                  y={fretboardPadding + stringIdx * stringSpacing}
+                  textAnchor="middle"
+                  dy="0.3em"
+                  fontSize="11"
+                  fontWeight="bold"
+                  fill={themeColor}
+                  style={{ cursor: "pointer" }}
+                  onClick={() => handleNoteClick(note)}
+                >
+                  {getNoteDisplay(note)}
+                </text>
+              );
+            })}
+
+            {/* Fretted note dots */}
+            {fretboardNotes.map((noteData, idx) => {
+              const x = fretboardPadding + (noteData.fret + 1) * fretSpacing - fretSpacing / 2;
+              const y = fretboardPadding + noteData.string * stringSpacing;
+              const isSelected = selectedNotes.includes(noteData.note);
+              // Only show root indicator if the note is selected and is the first selected note
+              const isRoot = isSelected && selectedNotes.length > 0 && noteData.note === selectedNotes[0];
+
+              return (
+                <g key={idx} onClick={() => handleNoteClick(noteData.note)} style={{ cursor: "pointer" }}>
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={dotRadius}
+                    fill={isRoot ? "#fbbf24" : isSelected ? themeColor : "#444"}
+                    stroke={isRoot ? "#f59e0b" : isSelected ? themeColor : "#666"}
+                    strokeWidth={isRoot ? "2.5" : "1.5"}
+                  />
+                  {isSelected && (
+                    <text
+                      x={x}
+                      y={y}
+                      textAnchor="middle"
+                      dy="0.3em"
+                      fontSize="10"
+                      fontWeight="bold"
+                      fill="#000"
+                    >
+                      {showIntervals ? getIntervalLabel(noteData.note) : getNoteDisplay(noteData.note)}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+    );
+  };
 
   // Piano SVG rendering - fully responsive and scalable
   // Calculate octaves based on available space (3-4 octaves for large screens, 1-2 for small)
@@ -489,6 +583,8 @@ export default function Home() {
       </div>
 
       {/* Controls */}
+      <details open className="mb-5 rounded-lg border border-gray-700">
+      <summary className="cursor-pointer p-3 font-bold" style={{ color: themeColor }}>Controls</summary>
       <div
         className="rounded-lg p-3 md:p-6 mb-6 md:mb-8 flex flex-wrap gap-2 md:gap-3 justify-center items-center"
         style={{ border: `2px solid ${themeColor}`, backgroundColor: "#2a2a2a" }}
@@ -594,6 +690,8 @@ export default function Home() {
         </button>
       </div>
 
+      </details>
+
       {/* Quiz Mode */}
       {isQuizMode && quizScale && (
         <div className="text-center mb-6 md:mb-8">
@@ -646,17 +744,17 @@ export default function Home() {
 
       {/* Status Message with Chord Detection */}
       {selectedNotes.length > 0 && !isQuizMode && detectedScale && (
-        <div className="text-center mb-4 md:mb-6">
-          <p className="text-sm md:text-base" style={{ color: themeColor }}>
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mb-4">
+          <p className="text-base md:text-lg font-bold" style={{ color: themeColor }}>
             {detectedScale.name}
           </p>
           {detectedChord && selectedNotes.length >= 3 && (
-            <p className="text-xs md:text-sm mt-2" style={{ color: themeColor, opacity: 0.9 }}>
+            <p className="text-xs md:text-sm" style={{ color: themeColor, opacity: 0.9 }}>
               Chord: <strong>{detectedChord.name}</strong>
             </p>
           )}
           {isScaleComplete(selectedNotes, detectedScale) && (
-            <p className="text-xs md:text-sm mt-2" style={{ color: "#4ade80", fontWeight: "bold" }}>
+            <p className="text-xs md:text-sm" style={{ color: "#4ade80", fontWeight: "bold" }}>
               ✓ Complete Scale
             </p>
           )}
@@ -665,7 +763,8 @@ export default function Home() {
 
       {/* Information Table */}
       {selectedNotes.length > 0 && !isQuizMode && detectedScale && (
-        <div className="mb-6 md:mb-8 overflow-x-auto">
+        <details open className="mb-5 rounded-lg border border-gray-700 overflow-x-auto">
+          <summary className="cursor-pointer p-3 font-bold" style={{ color: themeColor }}>Scale Details</summary>
           <table className="w-full border-collapse text-xs md:text-base">
             <thead>
               <tr style={{ backgroundColor: themeColor }}>
@@ -722,112 +821,23 @@ export default function Home() {
               )}
             </tbody>
           </table>
-        </div>
+        </details>
       )}
 
-      {/* Fretboard - Improved Design */}
-      <div className="mb-6 md:mb-8">
-        <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4 text-center" style={{ color: themeColor }}>
-          Guitar Fretboard {isQuizMode && quizScale ? `(${quizScale.name})` : detectedScale ? `(${detectedScale.name})` : ""}
-        </h2>
-        <div className="overflow-x-auto">
-          <svg
-            width="100%"
-            height="auto"
-            viewBox={`0 0 ${fretboardWidth} ${fretboardHeight}`}
-            className="bg-gray-800 rounded"
-            style={{ minHeight: "200px" }}
-            preserveAspectRatio="xMidYMid meet"
-          >
-            {/* Fret lines (horizontal) */}
-            {Array.from({ length: strings }).map((_, i) => (
-              <line
-                key={`fret-${i}`}
-                x1={fretboardPadding}
-                y1={fretboardPadding + i * stringSpacing}
-                x2={fretboardWidth - fretboardPadding}
-                y2={fretboardPadding + i * stringSpacing}
-                stroke="#666"
-                strokeWidth="1.5"
-              />
-            ))}
+      <details open className="mb-5 rounded-lg border border-gray-700">
+        <summary className="cursor-pointer p-3 font-bold" style={{ color: themeColor }}>Guitar Fretboard</summary>
+        {renderFretboard(stringOrder === "low-bottom" ? [...getTuning()].reverse() : getTuning())}
+      </details>
 
-            {/* String lines (vertical) */}
-            {Array.from({ length: frets + 1 }).map((_, i) => (
-              <line
-                key={`string-${i}`}
-                x1={fretboardPadding + i * fretSpacing}
-                y1={fretboardPadding}
-                x2={fretboardPadding + i * fretSpacing}
-                y2={fretboardHeight - fretboardPadding}
-                stroke={i === 0 ? "#999" : i === 1 || i === 12 ? "#daa520" : "#555"}
-                strokeWidth={i === 0 || i === 1 || i === 12 ? "3" : "1"}
-              />
-            ))}
-
-            {/* Open string tuning labels (left side) - text only */}
-            {displayTuning.map((note, stringIdx) => {
-              return (
-                <text
-                  key={`open-${stringIdx}`}
-                  x={fretboardPadding - 20}
-                  y={fretboardPadding + stringIdx * stringSpacing}
-                  textAnchor="middle"
-                  dy="0.3em"
-                  fontSize="11"
-                  fontWeight="bold"
-                  fill={themeColor}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => handleNoteClick(note)}
-                >
-                  {getNoteDisplay(note)}
-                </text>
-              );
-            })}
-
-            {/* Fretted note dots */}
-            {fretboardNotes.map((noteData, idx) => {
-              const x = fretboardPadding + (noteData.fret + 1) * fretSpacing - fretSpacing / 2;
-              const y = fretboardPadding + noteData.string * stringSpacing;
-              const isSelected = selectedNotes.includes(noteData.note);
-              // Only show root indicator if the note is selected and is the first selected note
-              const isRoot = isSelected && selectedNotes.length > 0 && noteData.note === selectedNotes[0];
-
-              return (
-                <g key={idx} onClick={() => handleNoteClick(noteData.note)} style={{ cursor: "pointer" }}>
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r={dotRadius}
-                    fill={isRoot ? "#fbbf24" : isSelected ? themeColor : "#444"}
-                    stroke={isRoot ? "#f59e0b" : isSelected ? themeColor : "#666"}
-                    strokeWidth={isRoot ? "2.5" : "1.5"}
-                  />
-                  {isSelected && (
-                    <text
-                      x={x}
-                      y={y}
-                      textAnchor="middle"
-                      dy="0.3em"
-                      fontSize="10"
-                      fontWeight="bold"
-                      fill="#000"
-                    >
-                      {showIntervals ? getIntervalLabel(noteData.note) : getNoteDisplay(noteData.note)}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-          </svg>
-        </div>
-      </div>
+      <details open className="mb-5 rounded-lg border border-gray-700">
+        <summary className="cursor-pointer p-3 font-bold" style={{ color: themeColor }}>Ukulele Fretboard (G-C-E-A)</summary>
+        {renderFretboard(stringOrder === "low-bottom" ? ["A", "E", "C", "G"] : ["G", "C", "E", "A"])}
+        <p className="px-3 py-2 text-xs text-gray-400">Standard G-C-E-A tuning (high G or low G). Notes are shared across all instruments.</p>
+      </details>
 
       {/* Piano - Responsive with bounded height */}
-      <div>
-        <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4 text-center" style={{ color: themeColor }}>
-          Piano Roll {isQuizMode && quizScale ? `(${quizScale.name})` : detectedScale ? `(${detectedScale.name})` : ""}
-        </h2>
+      <details open className="rounded-lg border border-gray-700">
+        <summary className="cursor-pointer p-3 font-bold" style={{ color: themeColor }}>Piano Roll</summary>
         <div className="w-full" style={{ height: "200px", display: "flex", alignItems: "stretch", justifyContent: "center", backgroundColor: "#1a2332", borderRadius: "0.5rem", overflow: "hidden" }}>
           <svg
             width="100%"
@@ -914,7 +924,7 @@ export default function Home() {
         <p className="text-xs md:text-sm text-gray-400 mt-2 text-center">
           Keyboard shortcuts: Q-Y (strings), 0-9, A-D (frets)
         </p>
-      </div>
+      </details>
 
       {/* Quiz Type Selection Modal */}
       {showQuizTypeMenu && (
@@ -1035,3 +1045,4 @@ export default function Home() {
     </div>
   );
 }
+
